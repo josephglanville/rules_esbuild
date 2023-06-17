@@ -187,6 +187,16 @@ def _bin_relative_path(ctx, file):
     up = "/".join([".." for _ in ctx.bin_dir.path.split("/")])
     return up + "/" + file.path
 
+def _bin_relative_path2(ctx, path):
+    prefix = ctx.bin_dir.path + "/"
+    if path.startswith(prefix):
+        return path[len(prefix):]
+
+    # Since path is relative to execroot, go up with ".." starting from
+    # ctx.bin_dir until we reach execroot, then join that with the file path.
+    up = "/".join([".." for _ in ctx.bin_dir.path.split("/")])
+    return up + "/" + path
+
 def _esbuild_impl(ctx):
     node_toolinfo = ctx.toolchains["@rules_nodejs//nodejs:toolchain_type"].nodeinfo
     esbuild_toolinfo = ctx.toolchains["@aspect_rules_esbuild//esbuild:toolchain_type"].esbuildinfo
@@ -260,6 +270,19 @@ def _esbuild_impl(ctx):
         args.update({
             "outdir": _bin_relative_path(ctx, js_out),
         })
+    elif ctx.outputs.output == None and ctx.files.entry_points:
+        # generate the output declarations based on entry_points
+        # first all the transpiled files
+        js_paths = [_bin_relative_path(ctx, f) for f in ctx.files.entry_points]
+        js_outs = [ctx.actions.declare_file(f[:f.rindex(".")] + ".js") for f in js_paths]
+        # then all the map files
+        js_map_outs = [ctx.actions.declare_file(f[:f.rindex(".")] + ".js.map") for f in js_paths]
+       
+        args.update({
+            "outdir": _bin_relative_path2(ctx, ctx.attr.name),
+        })
+        
+        output_sources = js_outs + js_map_outs
     else:
         js_out = ctx.outputs.output
         output_sources.append(js_out)

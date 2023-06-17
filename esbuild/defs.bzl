@@ -34,7 +34,7 @@ def esbuild(name, output_dir = False, splitting = False, config = None, **kwargs
         )
         config = config_file
 
-    if output_dir == True or entry_points or splitting == True:
+    if output_dir == True or splitting == True:
         _esbuild(
             name = name,
             config = config,
@@ -42,6 +42,15 @@ def esbuild(name, output_dir = False, splitting = False, config = None, **kwargs
             srcs = srcs,
             splitting = splitting,
             output_dir = True,
+            deps = deps,
+            **kwargs
+        )
+    elif entry_points:
+        _esbuild(
+            name = name,
+            config = config,
+            tsconfig = tsconfig,
+            srcs = srcs,
             deps = deps,
             **kwargs
         )
